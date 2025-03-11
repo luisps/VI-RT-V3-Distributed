@@ -20,20 +20,10 @@ bool Scene::trace (Ray r, Intersection *isect) {
     Intersection curr_isect;
     bool intersection = false;    
     
-    /*if (r.pix_x==320 && r.pix_y==240) {
-        fprintf (stderr, "This is a pixel. There are %d primitives!\n", numPrimitives);
-        fflush(stderr);
-    }*/
-        
-    
     if (numPrimitives==0) return false;
     
     // iterate over all primitives
     for (auto prim_itr = prims.begin() ; prim_itr != prims.end() ; prim_itr++) {
-       /* if (r.pix_x==320 && r.pix_y==240) {
-            fprintf (stderr, "Testing intersection\n");
-            fflush(stderr);
-        }*/
         if ((*prim_itr)->g->intersect(r, &curr_isect)) {
             if (!intersection) { // first intersection
                 intersection = true;
@@ -49,7 +39,7 @@ bool Scene::trace (Ray r, Intersection *isect) {
     isect->isLight = false;
 
     // now iterate over light sources and intersect with those that have geometry
-    for (auto l = lights.begin() ; l != lights.end() ; l++) {
+    /*for (auto l = lights.begin() ; l != lights.end() ; l++) {
         if ((*l)->type == AREA_LIGHT) {
             AreaLight *al = (AreaLight *)*l;
             if (al->gem->intersect(r, &curr_isect)) {
@@ -68,8 +58,7 @@ bool Scene::trace (Ray r, Intersection *isect) {
                 }
             }
         }
-    }
-
+    }*/
     
     return intersection;
 }

@@ -170,11 +170,14 @@ void CornellBox (Scene& scene) {
     AmbientLight *ambient = new AmbientLight(RGB(0.07,0.07,0.07));
     scene.lights.push_back(ambient);
     scene.numLights++;
-#define AREA
+//#define AREA
 #ifndef AREA
-    for (int x=-1 ; x<2 ; x++) {
-        for (int z=-1 ; z<2 ; z++) {
-            PointLight *p = new PointLight(RGB(0.16,0.16,0.16),Point(278.+x*150.,545.,280.+z*150));
+    int const N_points_dim=3;  // must be 1, 3 or 5
+    int const N_half = (N_points_dim-1)/2;
+    for (int x=-N_half ; x<N_half+1 ; x++) {
+        for (int z=-N_half ; z<N_half+1 ; z++) {
+            float const power = 1.f/((float)(N_points_dim*N_points_dim));
+            PointLight *p = new PointLight(RGB(power,power,power),Point(278.+x*100.,545.,280.+z*100));
             scene.lights.push_back(p);
             scene.numLights++;
         }

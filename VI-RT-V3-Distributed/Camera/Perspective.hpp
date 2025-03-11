@@ -18,13 +18,11 @@ class Perspective: public Camera {
 private:
     Vector Up;
     float tan_halfH;
-    Vector defocus_disk_Up, defocus_disk_R;
-    float defocus_angle;
     int W, H;
+    /*float defocus_angle;
+    Vector defocus_disk_Up, defocus_disk_R;
 
-    /****************************************
-     
-     Our Random Number Generator (rng) */
+    // Our Random Number Generator (rng)
     std::random_device rdev{};
     std::mt19937 rng{rdev()};
     std::uniform_real_distribution<float>U_dist{-1.0,1.0};  // uniform distribution in[0,1[
@@ -35,7 +33,7 @@ private:
             if ((p.X*p.X + p.Y*p.Y) < 1.)
                 return p;
         }
-    }
+    } */
     
     Point Eye, At;         // Camera center
     Point pixel00_loc;    // Location of pixel 0, 0
@@ -43,7 +41,9 @@ private:
     Vector pixel_delta_v;  // Offset to pixel below
 
 public:
-    Perspective (const Point _Eye, const Point _At, const Vector _Up, const int _W, const int _H, const float _fovH, float _defocus_angle=0, float _focus_dist=1.): Eye(_Eye), At(_At), W(_W), H(_H), defocus_angle(_defocus_angle) {
+    /*Perspective (const Point _Eye, const Point _At, const Vector _Up, const int _W, const int _H, const float _fovH, float _defocus_angle=0, float _focus_dist=1.): Eye(_Eye), At(_At), W(_W), H(_H), defocus_angle(_defocus_angle) {*/
+
+    Perspective (const Point _Eye, const Point _At, const Vector _Up, const int _W, const int _H, const float _fovH): Eye(_Eye), At(_At), W(_W), H(_H) {
 
         // compute camera 2 world transform
         Vector forward (At.X-Eye.X, At.Y-Eye.Y, At.Z-Eye.Z);
@@ -57,9 +57,7 @@ public:
         // Determine viewport dimensions.
         // precompute the tangents
         tan_halfH = tanf(_fovH/2.f);
-        fprintf (stderr, "fovH=%f, tan=%f\n", _fovH, tan_halfH);
-        float viewport_height = 2.0 * tan_halfH * _focus_dist;
-        //float viewport_height = 2.0 * focal_length;
+        float viewport_height = 2.0 * tan_halfH;
         float viewport_width = viewport_height * W/H;
 
         // Calculate the vectors across the horizontal and down the vertical viewport edges.
@@ -71,14 +69,14 @@ public:
         pixel_delta_v = viewport_v / H;
 
         // Calculate the location of the upper left pixel.
-        Point viewport_upper_left = Eye + _focus_dist*forward;
-        viewport_upper_left = viewport_upper_left - (viewport_u/2 + viewport_v/2);
-        pixel00_loc = viewport_upper_left + 0.5 * (pixel_delta_u + pixel_delta_v);
+        Point vp_upper_left = Eye + forward;
+        vp_upper_left = vp_upper_left - (viewport_u/2 + viewport_v/2);
+        pixel00_loc = vp_upper_left + 0.5 * (pixel_delta_u + pixel_delta_v);
         
         // Calculate the camera defocus disk basis vectors.
-        float defocus_radius = _focus_dist * tan(defocus_angle / 2);
+        /*float defocus_radius = _focus_dist * tan(defocus_angle / 2);
         defocus_disk_R = right * defocus_radius;
-        defocus_disk_Up = Up * defocus_radius;
+        defocus_disk_Up = Up * defocus_radius;*/
     }
 
     bool GenerateRay(const int x, const int y, Ray *r, const float *cam_jitter=NULL);

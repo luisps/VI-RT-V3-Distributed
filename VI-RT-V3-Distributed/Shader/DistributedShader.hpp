@@ -30,4 +30,4 @@ public:
     RGB shade (bool intersected, Intersection isect, int depth);
 };
 
-#endif /* AmbientShader_hpp */
+#endif /* DistributedShader */

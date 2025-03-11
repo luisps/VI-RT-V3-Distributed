@@ -22,12 +22,6 @@ bool Perspective::GenerateRay(const int x, const int y, Ray *r, const float *cam
     
     Point pixel_sample = pixel00_loc + (pc.X * pixel_delta_u) + (pc.Y * pixel_delta_v);
     r->o = Eye;
-    if (defocus_angle > 0.f) {
-        Point p = random_in_unit_disk();
-        r->o = Eye + p.X * defocus_disk_R + p.Y*defocus_disk_Up;
-    } else {
-        r->o = Eye;
-    }
     r->dir = r->o.vec2point(pixel_sample);
     r->dir.normalize();
 
