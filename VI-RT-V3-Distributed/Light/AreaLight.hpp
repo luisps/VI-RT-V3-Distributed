@@ -31,8 +31,14 @@ public:
     // thye pdf should be tajen as 1/Area
     RGB Sample_L (float *r, Point *p) {
         // sample point as described in the "Gloabl illumination Compendium", page 12, item 18
-        //return intensity;
-        return RGB(0., 0., 0.);
+        const float sqrt_r0 = sqrtf(r[0]);
+        const float alpha = 1.f - sqrt_r0;
+        const float beta = (1.f-r[1]) * sqrt_r0;
+        const float gamma = r[1] * sqrt_r0;
+        p->X = alpha*gem->v1.X + beta*gem->v2.X + gamma*gem->v3.X;
+        p->Y = alpha*gem->v1.Y + beta*gem->v2.Y + gamma*gem->v3.Y;
+        p->Z = alpha*gem->v1.Z + beta*gem->v2.Z + gamma*gem->v3.Z;
+        return intensity;
     }
     // return a point p, RGB radiance and pdf given a pair of random number in [0..[
     RGB Sample_L (float *r, Point *p, float& _pdf) {

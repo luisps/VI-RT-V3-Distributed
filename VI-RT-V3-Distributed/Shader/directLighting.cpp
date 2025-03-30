@@ -10,36 +10,22 @@
 #include "PointLight.hpp"
 #include "AreaLight.hpp"
 
-static RGB directLighting_ALL (Scene *scene, Intersection isect, BRDF *f, std::mt19937& rng, std::uniform_real_distribution<float>U_dist);
-static RGB directLighting_ONE (Scene *scene, Intersection isect, BRDF *f, std::mt19937& rng, std::uniform_real_distribution<float>U_dist);
-
 static RGB direct_AmbientLight (AmbientLight * l, BRDF  *  f);
 static RGB direct_PointLight (PointLight  *  l, Scene *scene, Intersection isect, BRDF  *  f);
-static RGB direct_AreaLight (AreaLight * l, Scene *scene, Intersection isect, BRDF* f, float &pdf, float *r);
+static RGB direct_AreaLight (AreaLight * l, Scene *scene, Intersection isect, BRDF* f, float *r);
 
 RGB directLighting (Scene *scene, Intersection isect, BRDF *f, std::mt19937& rng, std::uniform_real_distribution<float>U_dist, DIRECT_SAMPLE_MODE mode) {
     RGB color (0.,0.,0.);
     
-    switch (mode) {
-        case ALL_LIGHTS:
-            color = directLighting_ALL(scene, isect, f, rng, U_dist);
-            break;
-        case UNIFORM_ONE:
-            color = directLighting_ONE(scene, isect, f, rng, U_dist);
-            break;
-        default:
-            break;
-    }
-    return color;
-}
-
-
-RGB directLighting_ALL (Scene *scene, Intersection isect, BRDF *f, std::mt19937& rng, std::uniform_real_distribution<float>U_dist) {
-    RGB color (0.,0.,0.);
-    
     // Loop over scene's light sources
-    for (auto l : scene->lights) {
+    for (Light* l : scene->lights) {
 
+        if (mode==UNIFORM_ONE) {
+            int l_ndx = U_dist(rng)*scene->numLights;
+            if (l_ndx >= scene->numLights) l_ndx=scene->numLights-1;
+            l = scene->lights[l_ndx];
+        }
+        
         if (l->type == AMBIENT_LIGHT) {  // is it an ambient light ?
             color += direct_AmbientLight ((AmbientLight *)l, f);
             continue;
@@ -49,32 +35,25 @@ RGB directLighting_ALL (Scene *scene, Intersection isect, BRDF *f, std::mt19937&
             continue;
         } // is POINT_LIGHT
         if (l->type == AREA_LIGHT) {  // is it a area light ?
-            // ..
+            float r[2];
+            RGB color_temp(0.,0.,0.);
+            r[0] = U_dist(rng);
+            r[1] = U_dist(rng);
+            color_temp = direct_AreaLight ((AreaLight *)l, scene, isect, f, r);
+            color += color_temp;
         } // is AREA_LIGHT
+        
+        if (mode==UNIFORM_ONE) {
+            color = color * scene->numLights;
+            break;
+        }
     }  // loop over all light sources
+
     return color;
 }
 
-RGB directLighting_ONE (Scene *scene, Intersection isect, BRDF *f, std::mt19937& rng, std::uniform_real_distribution<float>U_dist) {
-    RGB color (0.,0.,0.);
-    int l_ndx=100000;
-    
-    float rand =  U_dist(rng);   // float in [0 .. 1[
-    //l_ndx =  ... scene->numLights;
-    if (l_ndx >= scene->numLights) l_ndx=scene->numLights-1;
-    Light *l = scene->lights[l_ndx];
 
-    if (l->type == AMBIENT_LIGHT) {  // is it an ambient light ?
-            color += direct_AmbientLight ((AmbientLight *)l, f);
-    }
-    else if (l->type == POINT_LIGHT) {  // is it a point light ?
-        color += direct_PointLight ((PointLight *)l, scene, isect, f);
-    } // is POINT_LIGHT
-    else if (l->type == AREA_LIGHT) {  // is it a area light ?
-        // ..
-    } // is AREA_LIGHT
-    return RGB(0., 0.,0.);
-}
+
 
 static RGB direct_AmbientLight (AmbientLight * l, BRDF * f) {
     RGB color (0., 0., 0.);
@@ -87,8 +66,11 @@ static RGB direct_AmbientLight (AmbientLight * l, BRDF * f) {
 
 static RGB direct_PointLight (PointLight* l, Scene *scene, Intersection isect, BRDF * f) {
     RGB color (0., 0., 0.);
+    RGB Kd;
+    
+    Kd = f->Kd;
 
-    if (!f->Kd.isZero()) {
+    if (!Kd.isZero()) {
         Point Lpos;
         RGB L = l->Sample_L(NULL, &Lpos);
         Vector Ldir=isect.p.vec2point(Lpos);
@@ -104,7 +86,7 @@ static RGB direct_PointLight (PointLight* l, Scene *scene, Intersection isect, B
             shadow.adjustOrigin(isect.gn);
             
             if (scene->visibility(shadow, Ldistance-EPSILON)) {
-                color += L * f->Kd * cosL;
+                color += L * Kd * cosL;
             }
         }
     } // Kd is zero
@@ -112,30 +94,36 @@ static RGB direct_PointLight (PointLight* l, Scene *scene, Intersection isect, B
     return (color);
 }
 
-static RGB direct_AreaLight (AreaLight* l, Scene *scene, Intersection isect, BRDF* f, float& pdf, float *r) {
+static RGB direct_AreaLight (AreaLight* l, Scene *scene, Intersection isect, BRDF* f, float *r) {
     RGB color (0., 0., 0.);
+    RGB Kd;
+    float pdf;
+    
+    Kd = f->Kd;
 
-    if (f->Kd.isZero()) return color;
-
-    Point Lpos;
+    pdf = 0.;
+    if (!Kd.isZero()) {
+        Point Lpos;
         
-    RGB L = l->Sample_L(r, &Lpos, pdf);
-    Vector Ldir=isect.p.vec2point(Lpos);
-    float Ldistance = Ldir.norm();
-    Ldir.normalize();
-    float cosL = Ldir.dot(isect.sn);
-    if (cosL>0) {
-        
-        Ray shadow = Ray(isect.p, Ldir);
-        shadow.pix_x = isect.pix_x;
-        shadow.pix_y = isect.pix_y;
-        
-        shadow.adjustOrigin(isect.gn);
-        
-        if (scene->visibility(shadow, Ldistance-EPSILON)) {
-            color = L * f->Kd * cosL;
+        RGB L = l->Sample_L(r, &Lpos, pdf);
+        Vector Ldir=isect.p.vec2point(Lpos);
+        float Ldistance = Ldir.norm();
+        Ldir.normalize();
+        float cosL = Ldir.dot(isect.sn);
+        if (cosL>0) {
+            
+            Ray shadow = Ray(isect.p, Ldir);
+            shadow.pix_x = isect.pix_x;
+            shadow.pix_y = isect.pix_y;
+            
+            shadow.adjustOrigin(isect.gn);
+            
+            if (scene->visibility(shadow, Ldistance-EPSILON)) {
+                color = L * Kd * cosL;
+                if (pdf >0.) color /= pdf;
+            }
         }
-    }
+    } // Kd is zero
     
     return (color);
 }

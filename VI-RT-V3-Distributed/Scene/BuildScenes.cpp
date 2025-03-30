@@ -170,7 +170,7 @@ void CornellBox (Scene& scene) {
     AmbientLight *ambient = new AmbientLight(RGB(0.07,0.07,0.07));
     scene.lights.push_back(ambient);
     scene.numLights++;
-//#define AREA
+#define AREA
 #ifndef AREA
     int const N_points_dim=3;  // must be 1, 3 or 5
     int const N_half = (N_points_dim-1)/2;

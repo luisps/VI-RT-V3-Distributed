@@ -73,7 +73,7 @@ int main(int argc, const char * argv[]) {
     //shd = new WhittedShader(&scene, RGB(0.1,0.1,0.8));
     shd = new DistributedShader(&scene, RGB(0.1,0.1,0.8));
     // declare the renderer
-    int const spp=20;
+    int const spp=1;
     
     bool const jitter=true;
     StandardRenderer myRender (cam, &scene, img, shd, spp, jitter);
